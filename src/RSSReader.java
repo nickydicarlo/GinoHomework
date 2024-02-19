@@ -17,6 +17,7 @@ import java.util.ServiceConfigurationError;
  *
  */
 public final class RSSReader {
+    // test commit to show how git works
 
     /**
      * Private constructor so this utility class cannot be instantiated.
