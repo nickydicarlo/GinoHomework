@@ -51,7 +51,7 @@ public final class RSSReader {
      * @requires [the root of channel is a <channel> tag] and out.is_open
      * @ensures out.content = #out.content * [the HTML "opening" tags]
      */
-    private static void outputHeader(XMLTree channel, SimpleWriter out) {
+    public static void outputHeader(XMLTree channel, SimpleWriter out) {
         assert channel != null : "Violation of: channel is not null";
         assert out != null : "Violation of: out is not null";
         assert channel.isTag() && channel.label().equals("channel") : ""
@@ -88,7 +88,7 @@ public final class RSSReader {
 
     }
 
-    private static String parseValue(XMLTree tree, String tagName){
+    public static String parseValue(XMLTree tree, String tagName){
         try{
             int tagIndex = getChildElement(tree, tagName);
             XMLTree tag = tree.child(tagIndex);
@@ -100,7 +100,7 @@ public final class RSSReader {
     }
 
 
-    private static void outputFooter(SimpleWriter out) {
+    public static void outputFooter(SimpleWriter out) {
         assert out != null : "Violation of: out is not null";
         assert out.isOpen() : "Violation of: out.is_open";
         out.println("</table>");
@@ -108,7 +108,7 @@ public final class RSSReader {
         out.println("</html>");
     }
 
-    private static int getChildElement(XMLTree xml, String tag) {
+    public static int getChildElement(XMLTree xml, String tag) {
         assert xml != null : "Violation of: xml is not null";
         assert tag != null : "Violation of: tag is not null";
         assert xml.isTag() : "Violation of: the label root of xml is a tag";
@@ -124,7 +124,7 @@ public final class RSSReader {
         return -1;
     }
 
-    private static void processItem(XMLTree item, SimpleWriter out) {
+    public static void processItem(XMLTree item, SimpleWriter out) {
         assert item != null : "Violation of: item is not null";
         assert out != null : "Violation of: out is not null";
         assert item.isTag() && item.label().equals("item") : ""
@@ -140,7 +140,7 @@ public final class RSSReader {
 
     // the title, if present and not empty, or the description, if not empty, or "No title available",
     // which should be linked if a link for the news item is available
-    static String parseNews(XMLTree item){
+    public static String parseNews(XMLTree item){
         StringBuilder sb = new StringBuilder(); // https://stackoverflow.com/questions/69576641/why-would-you-use-a-stringbuilder-method-over-a-string-in-java
         sb.append("<td>");
         sb.append(parseNewsATag(item));
@@ -150,7 +150,7 @@ public final class RSSReader {
         return sb.toString();
     }
 
-    static String parseNewsTitle(XMLTree item){
+    public static String parseNewsTitle(XMLTree item){
         try{
             String title = parseValue(item, "title");
             String description = parseValue(item,"description");
@@ -165,7 +165,7 @@ public final class RSSReader {
         }
         return "No title available";
     }
-    static String parseNewsATag(XMLTree item){
+    public static String parseNewsATag(XMLTree item){
         try{
             String link = parseValue(item, "link");
             if (link != null && !link.isBlank()){
@@ -176,7 +176,7 @@ public final class RSSReader {
         }
         return "<a>";
     }
-    static String parseDate(XMLTree item){
+    public static String parseDate(XMLTree item){
         try{
             String pubDate = parseValue(item, "pubDate");
             if(pubDate == null || pubDate.isBlank()){
@@ -189,7 +189,7 @@ public final class RSSReader {
         return "<td> No date available </td>";
     }
 
-    static String parseSource(XMLTree item){
+    public static String parseSource(XMLTree item){
         try{
             int sourceIndex = getChildElement(item, "source");
             XMLTree source = item.child(sourceIndex);
@@ -211,40 +211,37 @@ public final class RSSReader {
         // TODO clean this up and ask for user input
         out.print("Please enter a valid URL of an RSS 2.0 feed: ");
         String inputUrl = in.nextLine();
-        XMLTree inputTree = new XMLTree1(inputUrl);
-
 
         out.print("Please enter the name of an output file including the .html extension: ");
         String outputFileName = in.nextLine();
-        try {
-            SimpleWriter outputFile = new SimpleWriter1L(outputFileName);
-
-
-            if (inputTree.label().equals("rss") && inputTree.attributeValue("version").equals("2.0")) {
-
-                XMLTree channel = inputTree.child(getChildElement(inputTree, "channel"));
-                outputHeader(channel, outputFile);
-
-                for (int i = 0; i < channel.numberOfChildren(); i++) {
-                    XMLTree item = channel.child(i);
-                    if (item.label().equals("item")) {
-                        processItem(item, outputFile);
-                    }
-                }
-                outputFooter(outputFile);
-            } else {
-                out.println("ERROR! please enter a valid RSS feed. Ensure that it has the value 2.0");
-            }
-            outputFile.close();
+        try{
+            processChannel(inputUrl, outputFileName);
+        }catch (Exception ex){
+            // handle exception
         }
-        catch (Exception ex){
-            out.println("ERROR! please enter a valid output file. " + ex.getMessage());
-        }
-
 
         in.close();
         out.close();
 
+    }
+
+    public static void processChannel(String inputUrl, String outputFileName){
+        XMLTree inputTree = new XMLTree1(inputUrl);
+        SimpleWriter outputFile = new SimpleWriter1L(outputFileName);
+        if (inputTree.label().equals("rss") && inputTree.attributeValue("version").equals("2.0")) {
+
+            XMLTree channel = inputTree.child(getChildElement(inputTree, "channel"));
+            outputHeader(channel, outputFile);
+
+            for (int i = 0; i < channel.numberOfChildren(); i++) {
+                XMLTree item = channel.child(i);
+                if (item.label().equals("item")) {
+                    processItem(item, outputFile);
+                }
+            }
+            outputFooter(outputFile);
+        }
+        outputFile.close();
 
     }
 
